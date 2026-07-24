@@ -38,6 +38,7 @@ class MockEwpeProtocol(asyncio.DatagramProtocol):
         misbehave: str | None = None,
         protocol_version: int = PROTO_V1,
         scan_protocol_version: int | None = None,
+        command_value_field: str = "val",
     ) -> None:
         self.mac = mac
         self.name = name
@@ -53,6 +54,7 @@ class MockEwpeProtocol(asyncio.DatagramProtocol):
         self.misbehave = misbehave
         self.protocol_version = protocol_version
         self.scan_protocol_version = scan_protocol_version or protocol_version
+        self.command_value_field = command_value_field
         self.received_commands: list[dict[str, Any]] = []
         self.transport: asyncio.DatagramTransport | None = None
 
@@ -163,12 +165,13 @@ class MockEwpeProtocol(asyncio.DatagramProtocol):
             self.received_commands.append({"opt": opt, "p": values})
             for k, v in zip(opt, values, strict=False):
                 self.status[k] = v
-            return {
+            reply = {
                 "t": "res",
                 "mac": self.mac,
                 "opt": opt,
-                "val": values,
             }
+            reply[self.command_value_field] = values
+            return reply
         return None
 
 

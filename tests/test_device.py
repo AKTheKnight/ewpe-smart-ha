@@ -92,6 +92,24 @@ async def test_set_state_round_trip() -> None:
 
 
 @pytest.mark.asyncio
+async def test_set_state_accepts_p_response_values() -> None:
+    """SIH-09BIK with U-WB05RT13 V1.45 returns command values in ``p``."""
+    mock, port = await start_mock_device(
+        protocol_version=PROTO_V2,
+        command_value_field="p",
+    )
+    device = EwpeDevice(host="127.0.0.1", port=port, timeout=2.0)
+    await device.bind()
+
+    result = await device.set_state({"Lig": 1, "Tur": 1})
+
+    assert result == {"Lig": 1, "Tur": 1}
+    assert mock.received_commands == [{"opt": ["Lig", "Tur"], "p": [1, 1]}]
+    assert mock.status["Lig"] == 1
+    assert mock.status["Tur"] == 1
+
+
+@pytest.mark.asyncio
 async def test_silent_device_raises_timeout() -> None:
     _mock, port = await start_mock_device(misbehave="silent")
     device = EwpeDevice(host="127.0.0.1", port=port, timeout=0.5)
