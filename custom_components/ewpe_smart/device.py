@@ -52,6 +52,38 @@ class EwpeDevice:
         if not self.mac:
             await self._discover()
 
+        try:
+            reply = await self._bind_request()
+        except EwpeTimeout:
+            # Recent U-WB05RT13 firmware advertises a V1 scan envelope but only
+            # accepts V2 bind and command packets. Try the other cipher before
+            # treating an otherwise discoverable device as unreachable.
+            first_version = self.version
+            self.version = PROTO_V2 if first_version == PROTO_V1 else PROTO_V1
+            _LOGGER.info(
+                "Bind with protocol v%d timed out; retrying %s with v%d",
+                first_version,
+                self.host,
+                self.version,
+            )
+            reply = await self._bind_request()
+
+        if reply.get("t") != "bindok":
+            raise EwpeProtocolError(f"Unexpected bind reply: {reply!r}")
+        key = reply.get("key")
+        if not isinstance(key, str) or not key:
+            raise EwpeProtocolError("Bind reply contains no usable key")
+        self.key = key.encode("utf-8")
+        _LOGGER.info(
+            "Bound device %s (%s, proto v%d) on %s",
+            self.name,
+            self.mac,
+            self.version,
+            self.host,
+        )
+
+    async def _bind_request(self) -> dict[str, Any]:
+        """Send one bind request using the currently selected protocol."""
         _LOGGER.info(
             "Binding to %s (mac %s, proto v%d) on %s:%s",
             self.name,
@@ -68,19 +100,7 @@ class EwpeDevice:
             timeout=self.timeout,
             version=self.version,
         )
-        if reply.get("t") != "bindok":
-            raise EwpeProtocolError(f"Unexpected bind reply: {reply!r}")
-        key = reply.get("key")
-        if not isinstance(key, str) or not key:
-            raise EwpeProtocolError("Bind reply contains no usable key")
-        self.key = key.encode("utf-8")
-        _LOGGER.info(
-            "Bound device %s (%s, proto v%d) on %s",
-            self.name,
-            self.mac,
-            self.version,
-            self.host,
-        )
+        return reply
 
     async def _discover(self) -> None:
         """Send a unicast scan to learn MAC, name, and protocol version."""

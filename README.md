@@ -164,8 +164,10 @@ Then restart HA and reproduce the issue.
 
 ## Protocol notes
 
-EWPE Smart devices speak a UDP/7000 protocol with AES-128 ECB encryption and
-PKCS#7 padding. The protocol was reverse-engineered by
+EWPE Smart devices speak a UDP/7000 protocol using either AES-128 ECB (V1) or
+AES-128 GCM (V2). Protocol selection is automatic, including controllers that
+advertise V1 during discovery but require V2 for binding and commands. The
+protocol was reverse-engineered by
 [tomikaa87/gree-remote](https://github.com/tomikaa87/gree-remote) and is also
 implemented as an MQTT bridge by
 [stas-demydiuk/ewpe-smart-mqtt](https://github.com/stas-demydiuk/ewpe-smart-mqtt).

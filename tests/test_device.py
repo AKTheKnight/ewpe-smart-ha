@@ -163,3 +163,20 @@ async def test_v2_bind_uses_v2_generic_key() -> None:
     await device.bind()
 
     assert device.key == mock.device_key
+
+
+@pytest.mark.asyncio
+async def test_bind_falls_back_to_v2_when_scan_advertises_v1() -> None:
+    """Recent firmware uses V1 for discovery but requires V2 after discovery."""
+    mock, port = await start_mock_device(
+        protocol_version=PROTO_V2,
+        scan_protocol_version=PROTO_V1,
+    )
+    device = EwpeDevice(host="127.0.0.1", port=port, timeout=0.1)
+
+    await device.bind()
+
+    assert device.version == PROTO_V2
+    assert device.mac == mock.mac
+    assert device.key == mock.device_key
+    assert (await device.get_status())["Pow"] == 1

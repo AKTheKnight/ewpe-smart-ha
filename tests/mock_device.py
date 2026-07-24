@@ -18,6 +18,7 @@ from custom_components.ewpe_smart.const import (
     PROTO_V2,
 )
 from custom_components.ewpe_smart.protocol import (
+    EwpeAuthError,
     decrypt,
     decrypt_v2,
     encrypt,
@@ -36,6 +37,7 @@ class MockEwpeProtocol(asyncio.DatagramProtocol):
         status: dict[str, int] | None = None,
         misbehave: str | None = None,
         protocol_version: int = PROTO_V1,
+        scan_protocol_version: int | None = None,
     ) -> None:
         self.mac = mac
         self.name = name
@@ -50,6 +52,7 @@ class MockEwpeProtocol(asyncio.DatagramProtocol):
         }
         self.misbehave = misbehave
         self.protocol_version = protocol_version
+        self.scan_protocol_version = scan_protocol_version or protocol_version
         self.received_commands: list[dict[str, Any]] = []
         self.transport: asyncio.DatagramTransport | None = None
 
@@ -64,11 +67,20 @@ class MockEwpeProtocol(asyncio.DatagramProtocol):
         return decrypt(envelope["pack"], key)
 
     def _build_envelope(self, reply: dict[str, Any]) -> dict[str, Any]:
+        reply_version = (
+            self.scan_protocol_version
+            if reply.get("t") == "dev"
+            else self.protocol_version
+        )
         out_key = (
-            self.device_key if reply.get("t") in {"dat", "res"} else self._generic_key
+            self.device_key
+            if reply.get("t") in {"dat", "res"}
+            else GENERIC_KEY_V2
+            if reply_version == PROTO_V2
+            else GENERIC_KEY
         )
         i_field = 0 if reply.get("t") in {"dat", "res"} else 1
-        if self.protocol_version == PROTO_V2:
+        if reply_version == PROTO_V2:
             pack, tag = encrypt_v2(reply, out_key)
             return {
                 "cid": self.mac,
@@ -99,7 +111,10 @@ class MockEwpeProtocol(asyncio.DatagramProtocol):
 
         envelope = json.loads(data.decode("utf-8"))
         if "pack" in envelope:
-            inner = self._decrypt_inbound(envelope)
+            try:
+                inner = self._decrypt_inbound(envelope)
+            except EwpeAuthError:
+                return
         else:
             # Unencrypted broadcast/unicast scan
             inner = envelope
