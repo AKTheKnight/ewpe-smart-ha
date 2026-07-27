@@ -13,12 +13,20 @@ from homeassistant.components.climate import (
     HVACMode,
 )
 
-from custom_components.ewpe_smart.climate import EwpeClimateEntity
+from custom_components.ewpe_smart.climate import (
+    FAN_MEDIUM_HIGH,
+    FAN_MEDIUM_LOW,
+    FAN_QUIET,
+    FAN_TURBO,
+    EwpeClimateEntity,
+)
 from custom_components.ewpe_smart.const import (
     PARAM_FAN_SPEED,
     PARAM_MODE,
     PARAM_POWER,
+    PARAM_QUIET,
     PARAM_SET_TEMP,
+    PARAM_TURBO,
 )
 
 
@@ -49,6 +57,11 @@ def test_power_off_maps_to_hvac_off() -> None:
     assert entity.hvac_mode == HVACMode.OFF
 
 
+def test_climate_uses_translation_key_for_custom_fan_modes() -> None:
+    entity, _ = _make_entity({"Pow": 1, "Mod": 1})
+    assert entity.translation_key == "air_conditioner"
+
+
 @pytest.mark.parametrize(
     ("device_mode", "expected"),
     [
@@ -66,10 +79,31 @@ def test_modes_map_correctly(device_mode: int, expected: HVACMode) -> None:
 
 @pytest.mark.parametrize(
     ("speed", "expected"),
-    [(0, FAN_AUTO), (1, FAN_LOW), (3, FAN_MEDIUM), (5, FAN_HIGH)],
+    [
+        (0, FAN_AUTO),
+        (1, FAN_LOW),
+        (2, FAN_MEDIUM_LOW),
+        (3, FAN_MEDIUM),
+        (4, FAN_MEDIUM_HIGH),
+        (5, FAN_HIGH),
+    ],
 )
 def test_fan_modes_map_correctly(speed: int, expected: str) -> None:
     entity, _ = _make_entity({"Pow": 1, "Mod": 1, "WdSpd": speed})
+    assert entity.fan_mode == expected
+
+
+@pytest.mark.parametrize(
+    ("status", "expected"),
+    [
+        ({"WdSpd": 1, "Quiet": 2, "Tur": 0}, FAN_QUIET),
+        ({"WdSpd": 0, "Quiet": 0, "Tur": 1}, FAN_TURBO),
+    ],
+)
+def test_special_fan_modes_override_speed(
+    status: dict[str, int], expected: str
+) -> None:
+    entity, _ = _make_entity(status)
     assert entity.fan_mode == expected
 
 
@@ -106,10 +140,27 @@ async def test_set_hvac_mode_heat_emits_pow_on_and_mode_heat() -> None:
 
 
 @pytest.mark.asyncio
-async def test_set_fan_mode_high_emits_wdspd_5() -> None:
+@pytest.mark.parametrize(
+    ("fan_mode", "speed", "quiet", "turbo"),
+    [
+        (FAN_AUTO, 0, 0, 0),
+        (FAN_QUIET, 1, 2, 0),
+        (FAN_TURBO, 0, 0, 1),
+        (FAN_LOW, 1, 0, 0),
+        (FAN_MEDIUM_LOW, 2, 0, 0),
+        (FAN_MEDIUM, 3, 0, 0),
+        (FAN_MEDIUM_HIGH, 4, 0, 0),
+        (FAN_HIGH, 5, 0, 0),
+    ],
+)
+async def test_set_fan_mode_emits_complete_state(
+    fan_mode: str, speed: int, quiet: int, turbo: int
+) -> None:
     entity, device = _make_entity({"Pow": 1, "Mod": 1})
-    await entity.async_set_fan_mode(FAN_HIGH)
-    device.set_state.assert_awaited_once_with({PARAM_FAN_SPEED: 5})
+    await entity.async_set_fan_mode(fan_mode)
+    device.set_state.assert_awaited_once_with(
+        {PARAM_FAN_SPEED: speed, PARAM_QUIET: quiet, PARAM_TURBO: turbo}
+    )
 
 
 @pytest.mark.asyncio

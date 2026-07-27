@@ -56,10 +56,32 @@
     }
   },
   "entity": {
+    "climate": {
+      "air_conditioner": {
+        "state_attributes": {
+          "fan_mode": {
+            "state": {
+              "quiet": "Quiet",
+              "turbo": "Turbo",
+              "medium_low": "Medium-Low",
+              "medium_high": "Medium-High"
+            }
+          }
+        }
+      }
+    },
     "sensor": {
       "indoor_temperature": {
         "name": "Indoor temperature"
       }
+    },
+    "switch": {
+      "sleep": { "name": "Sleep" },
+      "xfan": { "name": "X-fan" },
+      "health": { "name": "Health" },
+      "display_light": { "name": "Display light" },
+      "energy_saving": { "name": "Energy saving" },
+      "fresh_air": { "name": "Fresh air" }
     }
   }
 }

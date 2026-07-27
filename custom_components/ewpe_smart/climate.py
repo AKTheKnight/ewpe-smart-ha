@@ -26,6 +26,8 @@ from .const import (
     FAN_SPEED_HIGH,
     FAN_SPEED_LOW,
     FAN_SPEED_MEDIUM,
+    FAN_SPEED_MEDIUM_HIGH,
+    FAN_SPEED_MEDIUM_LOW,
     MANUFACTURER,
     MAX_TEMP,
     MIN_TEMP,
@@ -37,8 +39,10 @@ from .const import (
     PARAM_FAN_SPEED,
     PARAM_MODE,
     PARAM_POWER,
+    PARAM_QUIET,
     PARAM_SET_TEMP,
     PARAM_TEMP_SENSOR,
+    PARAM_TURBO,
     POWER_OFF,
     POWER_ON,
 )
@@ -55,13 +59,41 @@ DEVICE_TO_HVAC_MODE: dict[int, HVACMode] = {
     v: k for k, v in HVAC_MODE_TO_DEVICE.items()
 }
 
-FAN_MODE_TO_DEVICE: dict[str, int] = {
-    FAN_AUTO: FAN_SPEED_AUTO,
-    FAN_LOW: FAN_SPEED_LOW,
-    FAN_MEDIUM: FAN_SPEED_MEDIUM,
-    FAN_HIGH: FAN_SPEED_HIGH,
+FAN_MEDIUM_LOW = "medium_low"
+FAN_MEDIUM_HIGH = "medium_high"
+FAN_QUIET = "quiet"
+FAN_TURBO = "turbo"
+
+FAN_MODE_TO_DEVICE: dict[str, dict[str, int]] = {
+    FAN_AUTO: {PARAM_FAN_SPEED: FAN_SPEED_AUTO, PARAM_QUIET: 0, PARAM_TURBO: 0},
+    FAN_QUIET: {PARAM_FAN_SPEED: FAN_SPEED_LOW, PARAM_QUIET: 2, PARAM_TURBO: 0},
+    FAN_TURBO: {PARAM_FAN_SPEED: FAN_SPEED_AUTO, PARAM_QUIET: 0, PARAM_TURBO: 1},
+    FAN_LOW: {PARAM_FAN_SPEED: FAN_SPEED_LOW, PARAM_QUIET: 0, PARAM_TURBO: 0},
+    FAN_MEDIUM_LOW: {
+        PARAM_FAN_SPEED: FAN_SPEED_MEDIUM_LOW,
+        PARAM_QUIET: 0,
+        PARAM_TURBO: 0,
+    },
+    FAN_MEDIUM: {
+        PARAM_FAN_SPEED: FAN_SPEED_MEDIUM,
+        PARAM_QUIET: 0,
+        PARAM_TURBO: 0,
+    },
+    FAN_MEDIUM_HIGH: {
+        PARAM_FAN_SPEED: FAN_SPEED_MEDIUM_HIGH,
+        PARAM_QUIET: 0,
+        PARAM_TURBO: 0,
+    },
+    FAN_HIGH: {PARAM_FAN_SPEED: FAN_SPEED_HIGH, PARAM_QUIET: 0, PARAM_TURBO: 0},
 }
-DEVICE_TO_FAN_MODE: dict[int, str] = {v: k for k, v in FAN_MODE_TO_DEVICE.items()}
+DEVICE_TO_FAN_MODE: dict[int, str] = {
+    FAN_SPEED_AUTO: FAN_AUTO,
+    FAN_SPEED_LOW: FAN_LOW,
+    FAN_SPEED_MEDIUM_LOW: FAN_MEDIUM_LOW,
+    FAN_SPEED_MEDIUM: FAN_MEDIUM,
+    FAN_SPEED_MEDIUM_HIGH: FAN_MEDIUM_HIGH,
+    FAN_SPEED_HIGH: FAN_HIGH,
+}
 
 
 async def async_setup_entry(
@@ -79,6 +111,7 @@ class EwpeClimateEntity(CoordinatorEntity[EwpeCoordinator], ClimateEntity):
 
     _attr_has_entity_name = True
     _attr_name = None
+    _attr_translation_key = "air_conditioner"
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_target_temperature_step = 1
     _attr_min_temp = MIN_TEMP
@@ -91,7 +124,16 @@ class EwpeClimateEntity(CoordinatorEntity[EwpeCoordinator], ClimateEntity):
         HVACMode.DRY,
         HVACMode.FAN_ONLY,
     ]
-    _attr_fan_modes = [FAN_AUTO, FAN_LOW, FAN_MEDIUM, FAN_HIGH]
+    _attr_fan_modes = [
+        FAN_AUTO,
+        FAN_QUIET,
+        FAN_TURBO,
+        FAN_LOW,
+        FAN_MEDIUM_LOW,
+        FAN_MEDIUM,
+        FAN_MEDIUM_HIGH,
+        FAN_HIGH,
+    ]
     _attr_supported_features = (
         ClimateEntityFeature.TARGET_TEMPERATURE
         | ClimateEntityFeature.FAN_MODE
@@ -127,6 +169,10 @@ class EwpeClimateEntity(CoordinatorEntity[EwpeCoordinator], ClimateEntity):
 
     @property
     def fan_mode(self) -> str | None:
+        if self._data.get(PARAM_QUIET):
+            return FAN_QUIET
+        if self._data.get(PARAM_TURBO):
+            return FAN_TURBO
         speed = self._data.get(PARAM_FAN_SPEED)
         if speed is None:
             return None
@@ -156,10 +202,10 @@ class EwpeClimateEntity(CoordinatorEntity[EwpeCoordinator], ClimateEntity):
         await self._send({PARAM_POWER: POWER_ON, PARAM_MODE: device_mode})
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
-        device_speed = FAN_MODE_TO_DEVICE.get(fan_mode)
-        if device_speed is None:
+        values = FAN_MODE_TO_DEVICE.get(fan_mode)
+        if values is None:
             raise ValueError(f"Unsupported fan_mode: {fan_mode}")
-        await self._send({PARAM_FAN_SPEED: device_speed})
+        await self._send(values)
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         temperature = kwargs.get(ATTR_TEMPERATURE)

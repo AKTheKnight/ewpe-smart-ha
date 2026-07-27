@@ -7,7 +7,7 @@ from homeassistant.const import Platform
 DOMAIN = "ewpe_smart"
 MANUFACTURER = "Gree (EWPE Smart)"
 
-PLATFORMS: list[Platform] = [Platform.CLIMATE, Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.CLIMATE, Platform.SENSOR, Platform.SWITCH]
 
 # Network
 DEFAULT_PORT = 7000
@@ -53,6 +53,15 @@ PARAM_SET_TEMP = "SetTem"
 PARAM_TEMP_UNIT = "TemUn"
 PARAM_FAN_SPEED = "WdSpd"
 PARAM_TEMP_SENSOR = "TemSen"
+PARAM_SLEEP = "SwhSlp"
+PARAM_SLEEP_MODE = "SlpMod"
+PARAM_TURBO = "Tur"
+PARAM_QUIET = "Quiet"
+PARAM_XFAN = "Blo"
+PARAM_HEALTH = "Health"
+PARAM_DISPLAY_LIGHT = "Lig"
+PARAM_ENERGY_SAVING = "SvSt"
+PARAM_FRESH_AIR = "Air"
 
 PHASE1_PARAMS: list[str] = [
     PARAM_POWER,
@@ -62,6 +71,20 @@ PHASE1_PARAMS: list[str] = [
     PARAM_FAN_SPEED,
     PARAM_TEMP_SENSOR,
 ]
+
+PHASE2_PARAMS: list[str] = [
+    PARAM_SLEEP,
+    PARAM_SLEEP_MODE,
+    PARAM_TURBO,
+    PARAM_QUIET,
+    PARAM_XFAN,
+    PARAM_HEALTH,
+    PARAM_DISPLAY_LIGHT,
+    PARAM_ENERGY_SAVING,
+    PARAM_FRESH_AIR,
+]
+
+STATUS_PARAMS = [*PHASE1_PARAMS, *PHASE2_PARAMS]
 
 # ── Value mappings ─────────────────────────────────────────────────────────
 POWER_OFF = 0
@@ -75,7 +98,9 @@ MODE_HEAT = 4
 
 FAN_SPEED_AUTO = 0
 FAN_SPEED_LOW = 1
+FAN_SPEED_MEDIUM_LOW = 2
 FAN_SPEED_MEDIUM = 3
+FAN_SPEED_MEDIUM_HIGH = 4
 FAN_SPEED_HIGH = 5
 
 # Temperature limits
