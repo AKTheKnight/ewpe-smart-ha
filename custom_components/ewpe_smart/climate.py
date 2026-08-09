@@ -41,6 +41,7 @@ from .const import (
     PARAM_POWER,
     PARAM_QUIET,
     PARAM_SET_TEMP,
+    PARAM_SWING_VERTICAL,
     PARAM_TEMP_SENSOR,
     PARAM_TURBO,
     POWER_OFF,
@@ -95,6 +96,25 @@ DEVICE_TO_FAN_MODE: dict[int, str] = {
     FAN_SPEED_HIGH: FAN_HIGH,
 }
 
+SWING_DEFAULT = "default"
+SWING_FULL = "full_swing"
+SWING_FIXED_UPPER = "fixed_upper"
+SWING_FIXED_UPPER_MIDDLE = "fixed_upper_middle"
+SWING_FIXED_MIDDLE = "fixed_middle"
+SWING_FIXED_LOWER_MIDDLE = "fixed_lower_middle"
+SWING_FIXED_LOWER = "fixed_lower"
+
+SWING_MODE_TO_DEVICE: dict[str, int] = {
+    SWING_DEFAULT: 0,
+    SWING_FULL: 1,
+    SWING_FIXED_UPPER: 2,
+    SWING_FIXED_UPPER_MIDDLE: 3,
+    SWING_FIXED_MIDDLE: 4,
+    SWING_FIXED_LOWER_MIDDLE: 5,
+    SWING_FIXED_LOWER: 6,
+}
+DEVICE_TO_SWING_MODE = {value: key for key, value in SWING_MODE_TO_DEVICE.items()}
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -134,9 +154,11 @@ class EwpeClimateEntity(CoordinatorEntity[EwpeCoordinator], ClimateEntity):
         FAN_MEDIUM_HIGH,
         FAN_HIGH,
     ]
+    _attr_swing_modes = [*SWING_MODE_TO_DEVICE]
     _attr_supported_features = (
         ClimateEntityFeature.TARGET_TEMPERATURE
         | ClimateEntityFeature.FAN_MODE
+        | ClimateEntityFeature.SWING_MODE
         | ClimateEntityFeature.TURN_ON
         | ClimateEntityFeature.TURN_OFF
     )
@@ -179,6 +201,13 @@ class EwpeClimateEntity(CoordinatorEntity[EwpeCoordinator], ClimateEntity):
         return DEVICE_TO_FAN_MODE.get(speed)
 
     @property
+    def swing_mode(self) -> str | None:
+        value = self._data.get(PARAM_SWING_VERTICAL)
+        if value is None:
+            return None
+        return DEVICE_TO_SWING_MODE.get(value)
+
+    @property
     def target_temperature(self) -> float | None:
         value = self._data.get(PARAM_SET_TEMP)
         return float(value) if value is not None else None
@@ -206,6 +235,12 @@ class EwpeClimateEntity(CoordinatorEntity[EwpeCoordinator], ClimateEntity):
         if values is None:
             raise ValueError(f"Unsupported fan_mode: {fan_mode}")
         await self._send(values)
+
+    async def async_set_swing_mode(self, swing_mode: str) -> None:
+        value = SWING_MODE_TO_DEVICE.get(swing_mode)
+        if value is None:
+            raise ValueError(f"Unsupported swing_mode: {swing_mode}")
+        await self._send({PARAM_SWING_VERTICAL: value})
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         temperature = kwargs.get(ATTR_TEMPERATURE)

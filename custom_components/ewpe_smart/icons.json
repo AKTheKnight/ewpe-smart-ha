@@ -14,6 +14,17 @@
               "medium_high": "mdi:numeric-4-circle-outline",
               "high": "mdi:numeric-5-circle-outline"
             }
+          },
+          "swing_mode": {
+            "state": {
+              "default": "mdi:arrow-oscillating-off",
+              "full_swing": "mdi:arrow-oscillating",
+              "fixed_upper": "mdi:numeric-1-circle-outline",
+              "fixed_upper_middle": "mdi:numeric-2-circle-outline",
+              "fixed_middle": "mdi:numeric-3-circle-outline",
+              "fixed_lower_middle": "mdi:numeric-4-circle-outline",
+              "fixed_lower": "mdi:numeric-5-circle-outline"
+            }
           }
         }
       }

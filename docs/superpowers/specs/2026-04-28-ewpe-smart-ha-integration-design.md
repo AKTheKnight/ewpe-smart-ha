@@ -30,7 +30,7 @@ In scope:
 
 Out of scope (deferred):
 
-- 4-way independent cassette swing (NE/NW/SE/SW)
+- Vertical and horizontal swing controls
 - Switch entities for Sleep / Turbo / X-Fan / Health / Display light / etc.
 - Frost protection (8 °C heating)
 - Air purifier / dehumidifier device classes
@@ -255,8 +255,9 @@ described in text form.
 
 - Add switch entities for sleep/turbo/x-fan/health/display light when the user
   asks for them (Phase 2)
-- Add 4-way swing for cassettes (Phase 3) — requires `SwingLfRig` and `SwUpDn`
-  experimentation with the user's actual unit
+- Add vertical swing control through `SwUpDn` (Phase 3)
+- Add optional horizontal swing through `SwingLfRig` when needed; protocol
+  support does not prove that a left/right motor is installed
 - Submit upstream to HACS default repository once stable
 - Possibly contribute manual-host support upstream to HA core `gree`
   integration as a future improvement

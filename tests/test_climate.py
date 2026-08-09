@@ -18,6 +18,13 @@ from custom_components.ewpe_smart.climate import (
     FAN_MEDIUM_LOW,
     FAN_QUIET,
     FAN_TURBO,
+    SWING_DEFAULT,
+    SWING_FIXED_LOWER,
+    SWING_FIXED_LOWER_MIDDLE,
+    SWING_FIXED_MIDDLE,
+    SWING_FIXED_UPPER,
+    SWING_FIXED_UPPER_MIDDLE,
+    SWING_FULL,
     EwpeClimateEntity,
 )
 from custom_components.ewpe_smart.const import (
@@ -26,6 +33,7 @@ from custom_components.ewpe_smart.const import (
     PARAM_POWER,
     PARAM_QUIET,
     PARAM_SET_TEMP,
+    PARAM_SWING_VERTICAL,
     PARAM_TURBO,
 )
 
@@ -107,6 +115,24 @@ def test_special_fan_modes_override_speed(
     assert entity.fan_mode == expected
 
 
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (0, SWING_DEFAULT),
+        (1, SWING_FULL),
+        (2, SWING_FIXED_UPPER),
+        (3, SWING_FIXED_UPPER_MIDDLE),
+        (4, SWING_FIXED_MIDDLE),
+        (5, SWING_FIXED_LOWER_MIDDLE),
+        (6, SWING_FIXED_LOWER),
+        (7, None),
+    ],
+)
+def test_vertical_swing_modes_map_correctly(value: int, expected: str | None) -> None:
+    entity, _ = _make_entity({PARAM_SWING_VERTICAL: value})
+    assert entity.swing_mode == expected
+
+
 def test_target_and_current_temperature() -> None:
     entity, _ = _make_entity({"Pow": 1, "Mod": 1, "SetTem": 23, "TemSen": 25})
     assert entity.target_temperature == 23.0
@@ -161,6 +187,28 @@ async def test_set_fan_mode_emits_complete_state(
     device.set_state.assert_awaited_once_with(
         {PARAM_FAN_SPEED: speed, PARAM_QUIET: quiet, PARAM_TURBO: turbo}
     )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("swing_mode", "value"),
+    [
+        (SWING_DEFAULT, 0),
+        (SWING_FULL, 1),
+        (SWING_FIXED_UPPER, 2),
+        (SWING_FIXED_UPPER_MIDDLE, 3),
+        (SWING_FIXED_MIDDLE, 4),
+        (SWING_FIXED_LOWER_MIDDLE, 5),
+        (SWING_FIXED_LOWER, 6),
+    ],
+)
+async def test_set_vertical_swing_mode_emits_sw_up_down(
+    swing_mode: str, value: int
+) -> None:
+    entity, device = _make_entity({PARAM_SWING_VERTICAL: 0})
+    await entity.async_set_swing_mode(swing_mode)
+    device.set_state.assert_awaited_once_with({PARAM_SWING_VERTICAL: value})
+    entity.coordinator.async_request_refresh.assert_awaited_once()
 
 
 @pytest.mark.asyncio

@@ -66,6 +66,17 @@
               "medium_low": "Medium-Low",
               "medium_high": "Medium-High"
             }
+          },
+          "swing_mode": {
+            "state": {
+              "default": "Default",
+              "full_swing": "Full swing",
+              "fixed_upper": "Fixed upper",
+              "fixed_upper_middle": "Fixed upper-middle",
+              "fixed_middle": "Fixed middle",
+              "fixed_lower_middle": "Fixed lower-middle",
+              "fixed_lower": "Fixed lower"
+            }
           }
         }
       }

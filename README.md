@@ -196,7 +196,8 @@ so no real device is required.
 
 - **Phase 2:** switch entities for sleep / turbo / quiet / X-fan / health /
   display light / energy save / fresh-air valve
-- **Phase 3:** swing controls (up/down, left/right, and 4-way for cassettes)
+- **Phase 3:** vertical swing control (full swing and five fixed positions)
+- **TODO:** optional horizontal swing control for units with a left/right motor
 - **Phase 4:** 8 °C frost-protection mode, child lock, lock-remote toggle
 
 If a feature you need is missing, open an issue describing your unit (brand,

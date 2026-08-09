@@ -62,6 +62,7 @@ PARAM_HEALTH = "Health"
 PARAM_DISPLAY_LIGHT = "Lig"
 PARAM_ENERGY_SAVING = "SvSt"
 PARAM_FRESH_AIR = "Air"
+PARAM_SWING_VERTICAL = "SwUpDn"
 
 PHASE1_PARAMS: list[str] = [
     PARAM_POWER,
@@ -84,7 +85,9 @@ PHASE2_PARAMS: list[str] = [
     PARAM_FRESH_AIR,
 ]
 
-STATUS_PARAMS = [*PHASE1_PARAMS, *PHASE2_PARAMS]
+PHASE3_PARAMS: list[str] = [PARAM_SWING_VERTICAL]
+
+STATUS_PARAMS = [*PHASE1_PARAMS, *PHASE2_PARAMS, *PHASE3_PARAMS]
 
 # ── Value mappings ─────────────────────────────────────────────────────────
 POWER_OFF = 0
