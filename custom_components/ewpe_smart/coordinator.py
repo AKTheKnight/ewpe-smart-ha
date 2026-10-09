@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import timedelta
 
@@ -11,9 +12,10 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN
-from .device import EwpeAuthError, EwpeDevice, EwpeError
+from .device import EwpeAuthError, EwpeDevice, EwpeError, EwpeTimeout
 
 _LOGGER = logging.getLogger(__name__)
+_STATUS_RETRY_DELAYS = (0.25, 0.5)
 
 
 class EwpeCoordinator(DataUpdateCoordinator[dict[str, int]]):
@@ -37,7 +39,19 @@ class EwpeCoordinator(DataUpdateCoordinator[dict[str, int]]):
 
     async def _async_update_data(self) -> dict[str, int]:
         try:
-            return await self.device.get_status()
+            for attempt in range(len(_STATUS_RETRY_DELAYS) + 1):
+                try:
+                    return await self.device.get_status()
+                except EwpeTimeout:
+                    if attempt == len(_STATUS_RETRY_DELAYS):
+                        raise
+                    delay = _STATUS_RETRY_DELAYS[attempt]
+                    _LOGGER.debug(
+                        "Status request to %s timed out; retrying in %.2fs",
+                        self.device.host,
+                        delay,
+                    )
+                    await asyncio.sleep(delay)
         except EwpeAuthError as err:
             raise ConfigEntryAuthFailed(
                 "Device key rejected; reauthentication required"
